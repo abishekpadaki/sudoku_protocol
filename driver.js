@@ -22,7 +22,7 @@ let bc = Blockchain.createInstance({
 });
 
 // Get Alice and Bob
-let [alice, bob] = bc.getClients('Alice', 'Bob');
+let [alice, bob, charlie] = bc.getClients('Alice', 'Bob', 'Charlie');
 
 // Showing the initial balances from Alice's perspective, for no particular reason.
 console.log("Initial balances:");
@@ -30,7 +30,7 @@ alice.showAllBalances();
 
 // The miners will start mining blocks when start is called.  After 5 seconds,
 // the code will terminate and show the final balances from Alice's perspective.
-bc.start(5000, () => {
+bc.start(20000, () => {
   console.log("Final balances, from Alice's perspective:");
   alice.showAllBalances();
 });
@@ -39,13 +39,16 @@ bc.start(5000, () => {
 console.log(`Alice is transferring 40 gold to ${bob.address}`);
 alice.postTransaction([{ amount: 40, address: bob.address }]);
 
+console.log(`Alice is transferring 30 gold to ${charlie.address}`);
+alice.postTransaction([{ amount: 30, address: charlie.address }]);
+
 setTimeout(() => {
   // Late miner - Donald has more mining power, represented by the miningRounds.
   // (Mickey and Minnie have the default of 2000 rounds).
   let donald = new Miner({
     name: "Donald",
     startingBlock: bc.genesis,
-    miningRounds: 3000,
+
   });
 
   console.log();
@@ -53,6 +56,6 @@ setTimeout(() => {
   console.log();
   bc.register(donald);
   donald.initialize();
-}, 2000);
+}, 1000);
 
 

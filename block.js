@@ -4,6 +4,14 @@ const Blockchain = require('./blockchain.js');
 
 const utils = require('./utils.js');
 
+const { exec } = require('child_process');
+
+
+
+
+// const solutions = utils.getSolutions();
+
+
 /**
  * A block is a collection of transactions, with a hash connecting it
  * to a previous block.
@@ -20,11 +28,12 @@ module.exports = class Block {
    * @param {Number} [target] - The POW target.  The miner must find a proof that
    *      produces a smaller value when hashed.
    * @param {Number} [coinbaseReward] - The gold that a miner earns for finding a block proof.
+   * @param {String} sudoku_result
    */
   constructor(rewardAddr, prevBlock, target=Blockchain.POW_TARGET, coinbaseReward=Blockchain.COINBASE_AMT_ALLOWED) {
+    // console.log(prevBlock ? prevBlock : 'no prev block');
     this.prevBlockHash = prevBlock ? prevBlock.hashVal() : null;
     this.target = target;
-
     // Get the balances and nonces from the previous block, if available.
     // Note that balances and nonces are NOT part of the serialized format.
     this.balances = prevBlock ? new Map(prevBlock.balances) : new Map();
@@ -73,16 +82,91 @@ module.exports = class Block {
     return this.chainLength === 0;
   }
 
+  async verifySol(seed){
+    const pythonScript = "puzzle_scripts/seed_verify.py";
+
+    const puzzle_str = await new Promise((resolve, reject) => {
+      exec(`python ${pythonScript} ${seed}`, (error, stdout, stderr) => {
+        if (error) {
+          console.log(`Error: ${error}`);
+          reject(error);
+          return;
+        }
+        if (stderr) {
+          console.log(`stderr: ${stderr}`);
+        }
+        resolve(stdout);
+      });
+    });
+
+    return puzzle_str;
+
+  }
+// getCellValue(fileInput, rowNumber, columnNumber) {
+//     return new Promise((resolve, reject) => {
+//       Papa.parse(fileInput, {
+//         complete: function(results) {
+//           if (results && results.data && results.data[rowNumber - 1] && results.data[rowNumber - 1][columnNumber - 1]) {
+//             resolve(results.data[rowNumber - 1][columnNumber - 1]);
+//           } else {
+//             reject(new Error('Data not available'));
+//           }
+//         }
+//       });
+//     });
+//   }
+  
+
+  // getSolution() {
+  //   let solution = [];
+  //   solution = utils.getSolutions();
+  // return solution;
+
+  // }
+
   /**
    * Returns true if the hash of the block is less than the target
    * proof of work value.
    *
    * @returns {Boolean} - True if the block has a valid proof.
    */
-  hasValidProof() {
-    let h = utils.hash(this.serialize());
-    let n = BigInt(`0x${h}`);
-    return n < this.target;
+async hasValidProof() {
+  //  let h = utils.hash(this.serialize());
+  let puzzle_num = 0;
+  // console.log(this.lastBlock);
+  // console.log(this.startingBlock);
+  // if (this.currentBlock.isGenesisBlock()){
+  //   puzzle_num = 0;
+  // }
+  if (!this.isGenesisBlock() && this.prevBlockHash) {
+    puzzle_num = utils.htonum(this.prevBlockHash);
+  }
+  else{
+    puzzle_num = 0;
+    // console.log('miner '+puzzle_num);
+  }
+  
+  // let prevHash = this.prevBlockHash;
+  // console.log('prevBlock'+prevHash);
+  
+  // if(prevHash) {
+  //     puzzle_num = utils.htonum(prevHash);
+  //     console.log('block '+puzzle_num);
+  //   }
+  
+
+  // let sol = this.getCellValue('./partial_sudoku.csv', puzzle_num, 2);
+  let sol = await this.verifySol(puzzle_num);
+  const hash_val = utils.hash(sol);
+  let n = `0x${hash_val}`;
+    if (this.sudoku_result !== n){
+      // console.log('valid?'+' nope '+ 'hashsol: '+n+' sudoku_res: '+this.sudoku_result);
+      return false;
+
+    }
+    // console.log('valid?'+' yup '+ 'hashsol: '+n);
+    return true;
+    // return (n < this.target);
   }
 
   /**
@@ -145,7 +229,8 @@ module.exports = class Block {
       // Other blocks must specify transactions and proof details.
       o.transactions = Array.from(this.transactions.entries());
       o.prevBlockHash = this.prevBlockHash;
-      o.proof = this.proof;
+      // o.proof = this.proof;
+      o.sudoku_result = this.sudoku_result;
       o.rewardAddr = this.rewardAddr;
     }
     return o;

@@ -2,6 +2,8 @@
 
 let Blockchain = require('./blockchain.js');
 let Client = require('./client.js');
+const { exec } = require('child_process');
+const utils = require('./utils.js');
 
 /**
  * Miners are clients, but they also mine blocks looking for "proofs".
@@ -26,7 +28,7 @@ module.exports = class Miner extends Client {
   constructor({name, net, startingBlock, keyPair, miningRounds=Blockchain.NUM_ROUNDS_MINING} = {}) {
     super({name, net, startingBlock, keyPair});
     this.miningRounds=miningRounds;
-
+    
     // Set of transactions to be added to the next block.
     this.transactions = new Set();
   }
@@ -48,9 +50,60 @@ module.exports = class Miner extends Client {
    * 
    * @param {Set} [txSet] - Transactions the miner has that have not been accepted yet.
    */
-  startNewSearch(txSet=new Set()) {
+  async startNewSearch(txSet=new Set()) {
     this.currentBlock = Blockchain.makeBlock(this.address, this.lastBlock);
+    // let puzzle_num = 0;
+    // console.log(this.lastBlock);
+    // console.log(this.startingBlock);
+    // if (this.currentBlock.isGenesisBlock()){
+    //   puzzle_num = 0;
+    // }
+    // if (!this.currentBlock.isGenesisBlock() && this.currentBlock.prevBlockHash) {
+    //   // puzzle_num = utils.htonum(this.currentBlock.prevBlockHash);
+    // }
+    // else{
+    //   puzzle_num = 0;
+    // }
+    //console.log(puzzle_num);
+    this.currentBlock.sudoku_result = null;
+    const pythonScript = "puzzle_scripts/puzzle_solve.py";
+    // const puzzle_str = await new Promise((resolve, reject) => {
+    //   exec(`python puzzle_scripts/puzzle_gen.py ${puzzle_num}`, (error, stdout, stderr) => {
+    //     if (error) {
+    //       console.log(`Error: ${error}`);
+    //       reject(error);
+    //       return;
+    //     }
+    //     if (stderr) {
+    //       console.log(`stderr: ${stderr}`);
+    //     }
+    //     resolve(stdout);
+    //   });
+    // });
 
+    const puzzle_str = utils.createPuzzle(this.currentBlock);
+
+    const res =  await new Promise((resolve, reject) => {
+      exec(`python ${pythonScript} ${puzzle_str}`, (error, stdout, stderr) => {
+        if (error) {
+          console.log(`Error: ${error}`);
+          reject(error);
+          return;
+        }
+        if (stderr) {
+          console.log(`stderr: ${stderr}`);
+        }
+        resolve(stdout);
+      });
+    });
+
+
+    
+    
+    let hash_val = utils.hash(res.replace('\n',''));
+    let n = `0x${hash_val}`;
+    this.currentBlock.sudoku_result = n;
+    // console.log(this.currentBlock.sudoku_result);
     // Merging txSet into the transaction queue.
     // These transactions may include transactions not already included
     // by a recently received block, but that the miner is aware of.
@@ -61,9 +114,9 @@ module.exports = class Miner extends Client {
       this.currentBlock.addTransaction(tx, this);
     });
     this.transactions.clear();
-
+    
     // Start looking for a proof at 0.
-    this.currentBlock.proof = 0;
+    // this.currentBlock.proof = 0;
   }
 
   /**
@@ -75,19 +128,24 @@ module.exports = class Miner extends Client {
    * 
    * @param {boolean} oneAndDone - Give up after the first PoW search (testing only).
    */
-  findProof(oneAndDone=false) {
-    let pausePoint = this.currentBlock.proof + this.miningRounds;
-    while (this.currentBlock.proof < pausePoint) {
-      if (this.currentBlock.hasValidProof()) {
-        this.log(`found proof for block ${this.currentBlock.chainLength}: ${this.currentBlock.proof}`);
+findProof(oneAndDone=false) {
+    // console.log(this.currentBlock);
+    //     let pausePoint = this.currentBlock.proof + this.miningRounds;
+    // while (this.currentBlock.proof < pausePoint) {
+if(this.currentBlock.sudoku_result){
+if (this.currentBlock.hasValidProof()) {
+        console.log('Miner solved puzzle hash: '+ this.currentBlock.sudoku_result);
+        this.log(`found proof for block ${this.currentBlock.chainLength}: ${this.currentBlock.sudoku_result}`);
         this.announceProof();
         // Note: calling receiveBlock triggers a new search.
         this.receiveBlock(this.currentBlock);
-        break;
+        // this.startNewSearch();
+        // break;
       }
-      this.currentBlock.proof++;
     }
-    // If we are testing, don't continue the search.
+      // this.currentBlock.proof++;
+    // }
+    // // If we are testing, don't continue the search.
     if (!oneAndDone) {
       // Check if anyone has found a block, and then return to mining.
       setTimeout(() => this.emit(Blockchain.START_MINING), 0);

@@ -1,5 +1,7 @@
 "use strict";
 
+const crypto = require('crypto');
+
 // Network message constants
 const MISSING_BLOCK = "MISSING_BLOCK";
 const POST_TRANSACTION = "POST_TRANSACTION";
@@ -98,6 +100,8 @@ module.exports = class Blockchain {
     let b = new this.instance.blockClass();
     b.chainLength = parseInt(o.chainLength, 10);
     b.timestamp = o.timestamp;
+    b.randSalt = crypto.randomBytes(16).toString('hex');
+
 
     if (b.isGenesisBlock()) {
       // Balances need to be recreated and restored in a map.
@@ -106,7 +110,8 @@ module.exports = class Blockchain {
       });
     } else {
       b.prevBlockHash = o.prevBlockHash;
-      b.proof = o.proof;
+      // b.proof = o.proof;
+      b.sudoku_result = o.sudoku_result;
       b.rewardAddr = o.rewardAddr;
       // Likewise, transactions need to be recreated and restored in a map.
       b.transactions = new Map();

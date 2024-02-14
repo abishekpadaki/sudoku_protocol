@@ -23,7 +23,12 @@
   "homepage": "https://github.com/taustin/spartan-gold#readme",
   "dependencies": {
     "chai": "^4.2.0",
-    "mocha": "^10.2.0"
+    "child_process": "^1.0.2",
+    "csv-parser": "^3.0.0",
+    "mocha": "^10.2.0",
+    "papaparse": "^5.4.1",
+    "readline-sync": "^1.4.10",
+    "seedrandom": "^3.0.5"
   },
   "devDependencies": {
     "eslint": "^6.8.0",
