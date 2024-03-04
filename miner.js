@@ -66,6 +66,7 @@ module.exports = class Miner extends Client {
     // }
     //console.log(puzzle_num);
     this.currentBlock.sudoku_result = null;
+    this.currentBlock.moves_made = null;
     const pythonScript = "puzzle_scripts/puzzle_solve.py";
     // const puzzle_str = await new Promise((resolve, reject) => {
     //   exec(`python puzzle_scripts/puzzle_gen.py ${puzzle_num}`, (error, stdout, stderr) => {
@@ -83,7 +84,7 @@ module.exports = class Miner extends Client {
 
     const puzzle_str = utils.createPuzzle(this.currentBlock);
 
-    const res =  await new Promise((resolve, reject) => {
+    let res =  await new Promise((resolve, reject) => {
       exec(`python ${pythonScript} ${puzzle_str}`, (error, stdout, stderr) => {
         if (error) {
           console.log(`Error: ${error}`);
@@ -97,12 +98,38 @@ module.exports = class Miner extends Client {
       });
     });
 
+    let json_res = JSON.parse(res);
+
+    let solved_solution = json_res.solution;
+    let moves_made = json_res.moves_made;
+
+  //   exec(`python ${pythonScript} ${puzzle_str}`, (error, stdout, stderr) => {
+  //     if (error) {
+  //         console.error(`exec error: ${error}`);
+  //         return;
+  //     }
+  //     if (stderr) {
+  //              console.log(`stderr: ${stderr}`);
+  //            }
+      
+  //     // Assuming stdout is the JSON string output from your Python script
+  //     let parsedOutput = JSON.parse(stdout);
+      
+  //     // Access the returned string and object
+  //     let returnedString = parsedOutput.string;
+  //     let returnedObject = parsedOutput.object;
+      
+  //     console.log(returnedString); // Prints the string returned from Python
+  //     console.log(returnedObject); // Prints the object returned from Python
+  // });
+
 
     
     
-    let hash_val = utils.hash(res.replace('\n',''));
+    let hash_val = utils.hash(solved_solution.replace('\n',''));
     let n = `0x${hash_val}`;
     this.currentBlock.sudoku_result = n;
+    this.currentBlock.moves_made = moves_made;
     // console.log(this.currentBlock.sudoku_result);
     // Merging txSet into the transaction queue.
     // These transactions may include transactions not already included
@@ -136,6 +163,7 @@ if(this.currentBlock.sudoku_result){
 if (this.currentBlock.hasValidProof()) {
         console.log('Miner solved puzzle hash: '+ this.currentBlock.sudoku_result);
         this.log(`found proof for block ${this.currentBlock.chainLength}: ${this.currentBlock.sudoku_result}`);
+        console.log(this.currentBlock);
         this.announceProof();
         // Note: calling receiveBlock triggers a new search.
         this.receiveBlock(this.currentBlock);

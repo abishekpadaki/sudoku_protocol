@@ -29,6 +29,7 @@ module.exports = class Block {
    *      produces a smaller value when hashed.
    * @param {Number} [coinbaseReward] - The gold that a miner earns for finding a block proof.
    * @param {String} sudoku_result
+   * @param {Array.<[string, string, string]>} moves_made - An array of tuples, where each tuple consists of three strings (row,col,num)
    */
   constructor(rewardAddr, prevBlock, target=Blockchain.POW_TARGET, coinbaseReward=Blockchain.COINBASE_AMT_ALLOWED) {
     // console.log(prevBlock ? prevBlock : 'no prev block');
@@ -231,6 +232,7 @@ async hasValidProof() {
       o.prevBlockHash = this.prevBlockHash;
       // o.proof = this.proof;
       o.sudoku_result = this.sudoku_result;
+      o.moves_made = this.moves_made;
       o.rewardAddr = this.rewardAddr;
     }
     return o;

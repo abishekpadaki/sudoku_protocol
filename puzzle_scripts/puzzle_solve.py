@@ -1,4 +1,5 @@
 import sys
+import json
 
 moves = []
 
@@ -65,6 +66,13 @@ if __name__ == "__main__":
     else:
         input_string = sys.argv[1]
         solution, moves_made = puzzle_solver(input_string)
-        print(solution)
+        #print(solution)
         #print(moves_made)
+        output_obj = {
+            'solution': solution,
+            'moves_made': moves_made
+        }
+
+        json_output = json.dumps(output_obj)
+        print(json_output)
 
