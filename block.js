@@ -28,6 +28,7 @@ module.exports = class Block {
    * @param {Number} [target] - The POW target.  The miner must find a proof that
    *      produces a smaller value when hashed.
    * @param {Number} [coinbaseReward] - The gold that a miner earns for finding a block proof.
+   * @param {String} sudoku_puzzle
    * @param {String} sudoku_result
    * @param {Array.<[string, string, string]>} moves_made - An array of tuples, where each tuple consists of three strings (row,col,num)
    */
@@ -132,42 +133,29 @@ module.exports = class Block {
    * @returns {Boolean} - True if the block has a valid proof.
    */
 async hasValidProof() {
-  //  let h = utils.hash(this.serialize());
-  let puzzle_num = 0;
-  // console.log(this.lastBlock);
-  // console.log(this.startingBlock);
-  // if (this.currentBlock.isGenesisBlock()){
+  // let puzzle_num = 0;
+  
+  // if (!this.isGenesisBlock() && this.prevBlockHash) {
+  //   puzzle_num = utils.htonum(this.prevBlockHash);
+  // }
+  // else{
   //   puzzle_num = 0;
   // }
-  if (!this.isGenesisBlock() && this.prevBlockHash) {
-    puzzle_num = utils.htonum(this.prevBlockHash);
-  }
-  else{
-    puzzle_num = 0;
-    // console.log('miner '+puzzle_num);
-  }
-  
-  // let prevHash = this.prevBlockHash;
-  // console.log('prevBlock'+prevHash);
-  
-  // if(prevHash) {
-  //     puzzle_num = utils.htonum(prevHash);
-  //     console.log('block '+puzzle_num);
+      
+  let decodedMoves = JSON.parse(Buffer.from(this.moves_made, 'base64').toString('ascii'));
+
+  // let sol = await this.verifySol(puzzle_num);
+  // const hash_val = utils.hash(sol);
+  // let n = `0x${hash_val}`;
+  //   if (this.sudoku_result !== n){
+  //     return false;
+
   //   }
+  //   return true;
+
+  return utils.verifySudokuSolution(this.sudoku_puzzle,this.sudoku_result,decodedMoves);
+
   
-
-  // let sol = this.getCellValue('./partial_sudoku.csv', puzzle_num, 2);
-  let sol = await this.verifySol(puzzle_num);
-  const hash_val = utils.hash(sol);
-  let n = `0x${hash_val}`;
-    if (this.sudoku_result !== n){
-      // console.log('valid?'+' nope '+ 'hashsol: '+n+' sudoku_res: '+this.sudoku_result);
-      return false;
-
-    }
-    // console.log('valid?'+' yup '+ 'hashsol: '+n);
-    return true;
-    // return (n < this.target);
   }
 
   /**
@@ -231,6 +219,7 @@ async hasValidProof() {
       o.transactions = Array.from(this.transactions.entries());
       o.prevBlockHash = this.prevBlockHash;
       // o.proof = this.proof;
+      o.sudoku_puzzle = this.sudoku_puzzle;
       o.sudoku_result = this.sudoku_result;
       o.moves_made = this.moves_made;
       o.rewardAddr = this.rewardAddr;

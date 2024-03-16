@@ -1,8 +1,8 @@
 "use strict";
 
 let crypto = require('crypto');
-const fs = require('fs');
-const csv = require('csv-parser');
+// const fs = require('fs');
+// const csv = require('csv-parser');
 const seedrandom = require('seedrandom');
 
 
@@ -69,7 +69,7 @@ exports.htonum = function hashToNumber(hashValue) {
   }
 };
 
-exports.generateSudoku = function(seed) {
+exports.generateSudoku = function(seed,base=3) {
   // Seeding the random function is not as straightforward in JS as in Python.
   // A custom random generator based on the seed can be implemented or an external library can be used.
   // For simplicity, we'll use Math.random() and note that for reproducible puzzles, a seed-based RNG should be used.
@@ -77,7 +77,6 @@ exports.generateSudoku = function(seed) {
 
   // Math.seedrandom(seed); // Assuming seedrandom.js is included for seedable randomness
 
-  const base = 3;
   const side = base * base;
 
   function pattern(r, c) {
@@ -126,3 +125,41 @@ exports.createPuzzle = function(currBlock) {
   }
   
 };
+
+exports.parseInput = function(inputString) {
+  let [dimensions, puzzleString] = inputString.split('_');
+  dimensions = parseInt(dimensions, 10);
+  return { dimensions, puzzleString };
+};
+
+exports.parseSudoku=function (puzzleString, dimensions) {
+  let puzzle = [];
+  for (let i = 0; i < dimensions; i++) {
+      puzzle.push(puzzleString.slice(i * dimensions, (i + 1) * dimensions).split('').map(Number));
+  }
+  return puzzle;
+};
+
+exports.applyMoves=function (puzzle, moves) {
+  moves.forEach(({row, col, num}) => {
+      puzzle[row - 1][col - 1] = num;
+  });
+};
+
+ exports.serializePuzzle=function(puzzle) {
+  return puzzle.map(row => row.join('')).join('');
+};
+
+ exports.hashPuzzle=function(puzzleString) {
+  return crypto.createHash('sha256').update(puzzleString).digest('hex');
+};
+
+exports.verifySudokuSolution=function(inputString, hashedSolution, moves) {
+  let { dimensions, puzzleString } = this.parseInput(inputString);
+  let puzzle = this.parseSudoku(puzzleString, dimensions);
+  this.applyMoves(puzzle, moves);
+  let solvedPuzzleString = this.serializePuzzle(puzzle);
+  let solvedPuzzleHash = this.hashPuzzle(solvedPuzzleString);
+  return solvedPuzzleHash === hashedSolution;
+};
+

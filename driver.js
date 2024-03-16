@@ -33,6 +33,11 @@ alice.showAllBalances();
 bc.start(20000, () => {
   console.log("Final balances, from Alice's perspective:");
   alice.showAllBalances();
+  console.log("Shutting down...");
+  let delayEndTime = new Date().getTime() + 5000; // 1000 milliseconds or 1 second
+while (new Date().getTime() < delayEndTime) {
+  // Do nothing, just loop
+}
 });
 
 // Alice transfers some money to Bob.

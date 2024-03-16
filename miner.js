@@ -51,6 +51,9 @@ module.exports = class Miner extends Client {
    * @param {Set} [txSet] - Transactions the miner has that have not been accepted yet.
    */
   async startNewSearch(txSet=new Set()) {
+    this.startTime = new Date();
+
+
     this.currentBlock = Blockchain.makeBlock(this.address, this.lastBlock);
     // let puzzle_num = 0;
     // console.log(this.lastBlock);
@@ -67,6 +70,7 @@ module.exports = class Miner extends Client {
     //console.log(puzzle_num);
     this.currentBlock.sudoku_result = null;
     this.currentBlock.moves_made = null;
+    this.currentBlock.sudoku_puzzle = null; 
     const pythonScript = "puzzle_scripts/puzzle_solve.py";
     // const puzzle_str = await new Promise((resolve, reject) => {
     //   exec(`python puzzle_scripts/puzzle_gen.py ${puzzle_num}`, (error, stdout, stderr) => {
@@ -84,8 +88,9 @@ module.exports = class Miner extends Client {
 
     const puzzle_str = utils.createPuzzle(this.currentBlock);
 
+    this.currentBlock.sudoku_puzzle = puzzle_str;
     let res =  await new Promise((resolve, reject) => {
-      exec(`python ${pythonScript} ${puzzle_str}`, (error, stdout, stderr) => {
+    exec(`python ${pythonScript} ${puzzle_str}`, (error, stdout, stderr) => {
         if (error) {
           console.log(`Error: ${error}`);
           reject(error);
@@ -99,7 +104,6 @@ module.exports = class Miner extends Client {
     });
 
     let json_res = JSON.parse(res);
-
     let solved_solution = json_res.solution;
     let moves_made = json_res.moves_made;
 
@@ -129,7 +133,10 @@ module.exports = class Miner extends Client {
     let hash_val = utils.hash(solved_solution.replace('\n',''));
     let n = `0x${hash_val}`;
     this.currentBlock.sudoku_result = n;
-    this.currentBlock.moves_made = moves_made;
+
+    let serialized_moves = JSON.stringify(moves_made);
+    let encodedMoves = Buffer.from(serialized_moves).toString('base64');
+    this.currentBlock.moves_made = encodedMoves;
     // console.log(this.currentBlock.sudoku_result);
     // Merging txSet into the transaction queue.
     // These transactions may include transactions not already included
@@ -144,6 +151,7 @@ module.exports = class Miner extends Client {
     
     // Start looking for a proof at 0.
     // this.currentBlock.proof = 0;
+
   }
 
   /**
@@ -163,7 +171,7 @@ if(this.currentBlock.sudoku_result){
 if (this.currentBlock.hasValidProof()) {
         console.log('Miner solved puzzle hash: '+ this.currentBlock.sudoku_result);
         this.log(`found proof for block ${this.currentBlock.chainLength}: ${this.currentBlock.sudoku_result}`);
-        console.log(this.currentBlock);
+        // console.log(this.currentBlock);
         this.announceProof();
         // Note: calling receiveBlock triggers a new search.
         this.receiveBlock(this.currentBlock);
@@ -184,7 +192,13 @@ if (this.currentBlock.hasValidProof()) {
    * Broadcast the block, with a valid proof included.
    */
   announceProof() {
+    let endTime = new Date(); // Capture the end time when proof is found and being announced
+    let duration = endTime - this.startTime; // Calculate duration in milliseconds
+
+    console.log(`Duration of mining (useful work) by ${this.name}: ${duration} ms`);
     this.net.broadcast(Blockchain.PROOF_FOUND, this.currentBlock);
+
+    this.startTime = null;
   }
 
   /**
