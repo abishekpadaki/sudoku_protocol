@@ -3,7 +3,7 @@
 let Blockchain = require('./blockchain.js');
 
 // Used to create a miner outside of the blockchain constructor.
-let Miner = require('./miner.js');
+// let Miner = require('./miner.js');
 
 let FakeNet = require('./fake-net.js');
 
@@ -33,11 +33,6 @@ alice.showAllBalances();
 bc.start(20000, () => {
   console.log("Final balances, from Alice's perspective:");
   alice.showAllBalances();
-  console.log("Shutting down...");
-  let delayEndTime = new Date().getTime() + 5000; // 1000 milliseconds or 1 second
-while (new Date().getTime() < delayEndTime) {
-  // Do nothing, just loop
-}
 });
 
 // Alice transfers some money to Bob.
@@ -47,20 +42,20 @@ alice.postTransaction([{ amount: 40, address: bob.address }]);
 console.log(`Alice is transferring 30 gold to ${charlie.address}`);
 alice.postTransaction([{ amount: 30, address: charlie.address }]);
 
-setTimeout(() => {
-  // Late miner - Donald has more mining power, represented by the miningRounds.
-  // (Mickey and Minnie have the default of 2000 rounds).
-  let donald = new Miner({
-    name: "Donald",
-    startingBlock: bc.genesis,
+// setTimeout(() => {
+//   // Late miner - Donald has more mining power, represented by the miningRounds.
+//   // (Mickey and Minnie have the default of 2000 rounds).
+//   let donald = new Miner({
+//     name: "Donald",
+//     startingBlock: bc.genesis,
 
-  });
+//   });
 
-  console.log();
-  console.log("***Starting a late-to-the-party miner***");
-  console.log();
-  bc.register(donald);
-  donald.initialize();
-}, 1000);
+//   console.log();
+//   console.log("***Starting a late-to-the-party miner***");
+//   console.log();
+//   bc.register(donald);
+//   donald.initialize();
+// }, 1000);
 
 

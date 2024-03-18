@@ -63,7 +63,6 @@ def puzzle_solver(input_string):
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         print("Usage: python puzzle_solver.py '<dimension>_<puzzle_to_be_solved>'")
-        sys.exit(1)
     else:
         input_string = sys.argv[1]
         solution, moves_made = puzzle_solver(input_string)
@@ -76,5 +75,6 @@ if __name__ == "__main__":
 
         json_output = json.dumps(output_obj)
         print(json_output)
-        sys.exit(0)
+
+    sys.exit(0)
 
