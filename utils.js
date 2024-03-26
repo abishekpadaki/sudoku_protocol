@@ -1,8 +1,6 @@
 "use strict";
 
 let crypto = require('crypto');
-// const fs = require('fs');
-// const csv = require('csv-parser');
 const seedrandom = require('seedrandom');
 
 
@@ -62,16 +60,15 @@ exports.htonum = function hashToNumber(hashValue) {
   if (hashValue){
   const intValue = BigInt(`0x${hashValue}`);
   
-  // const scaledValue = Number(intValue % 499n) + 1;
   const scaledValue = Number(intValue % 100000n) + 1;
   return scaledValue;
 
   }
 };
 
-exports.generateSudoku = function(seed,base=3) {
+exports.generateSudoku = function(seed,base=3,emptinessFactor = 0.5) {
   // Seeding the random function is not as straightforward in JS as in Python.
-  // A custom random generator based on the seed can be implemented or an external library can be used.
+  // A custom random generator based on the  seed can be implemented or an external library can be used.
   // For simplicity, we'll use Math.random() and note that for reproducible puzzles, a seed-based RNG should be used.
   seedrandom(seed, { global: true });
 
@@ -101,7 +98,7 @@ exports.generateSudoku = function(seed,base=3) {
 
   // Randomly remove numbers to create puzzles
   const squares = side * side;
-  const empties = Math.floor(squares * 3 / 4);
+  const empties = Math.floor(squares * emptinessFactor);
   for (let p of shuffle(Array.from({length: squares}, (_, i) => i)).slice(0, empties)) {
       board[Math.floor(p / side)][p % side] = 0;
   }
@@ -114,14 +111,27 @@ exports.puzzleToString = function(puzzle) {
 };
 
 exports.createPuzzle = function(currBlock) {
+  let base = 3; // Default Sudoku 9x9
+  let emptinessFactor = 0.5; // Default emptiness factor
+
   if (!currBlock.isGenesisBlock() && currBlock.prevBlockHash) {
     let puzzle_num = exports.htonum(currBlock.prevBlockHash);
-    const sudokuPuzzle = exports.generateSudoku(puzzle_num);
-    return '9_' + exports.puzzleToString(sudokuPuzzle);
+    let prevBlockTime = currBlock.prevBlockTime ? currBlock.prevBlockTime : 0;
+  
+    if (prevBlockTime < 60) { 
+      emptinessFactor = 0.75; // Make it harder
+      console.log("Puzzle Made Harder\n");
+    } else if (prevBlockTime > 100) {
+      emptinessFactor = 0.25; // Make it easier
+      console.log("Puzzle Made Easier\n");
+    }
+
+    const sudokuPuzzle = exports.generateSudoku(puzzle_num, base, emptinessFactor);
+    return base * base + '_' + exports.puzzleToString(sudokuPuzzle);
   }
   else {
     const sudokuPuzzle = exports.generateSudoku(0);
-    return '9_' + exports.puzzleToString(sudokuPuzzle);
+    return  base * base + '_' + exports.puzzleToString(sudokuPuzzle);
   }
   
 };

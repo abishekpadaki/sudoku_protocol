@@ -36,6 +36,10 @@ module.exports = class Block {
     // console.log(prevBlock ? prevBlock : 'no prev block');
     this.prevBlockHash = prevBlock ? prevBlock.hashVal() : null;
     this.target = target;
+    if (prevBlock && prevBlock.blockTime){
+      this.prevBlockTime = prevBlock.blockTime;
+
+    }
     // Get the balances and nonces from the previous block, if available.
     // Note that balances and nonces are NOT part of the serialized format.
     this.balances = prevBlock ? new Map(prevBlock.balances) : new Map();
@@ -218,9 +222,11 @@ async hasValidProof() {
       // Other blocks must specify transactions and proof details.
       o.transactions = Array.from(this.transactions.entries());
       o.prevBlockHash = this.prevBlockHash;
+      o.prevBlockTime = this.prevBlockTime;
       // o.proof = this.proof;
       o.sudoku_puzzle = this.sudoku_puzzle;
       o.sudoku_result = this.sudoku_result;
+      o.blockTime = this.blockTime;
       o.moves_made = this.moves_made;
       o.rewardAddr = this.rewardAddr;
     }

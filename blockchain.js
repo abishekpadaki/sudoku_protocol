@@ -113,6 +113,8 @@ module.exports = class Blockchain {
       // b.proof = o.proof;
       b.sudoku_puzzle = o.sudoku_puzzle;
       b.sudoku_result = o.sudoku_result;
+      b.blockTime = o.blockTime;
+      b.prevBlockTime = o.prevBlockTime;
       b.moves_made = o.moves_made;
       b.rewardAddr = o.rewardAddr;
       // Likewise, transactions need to be recreated and restored in a map.
